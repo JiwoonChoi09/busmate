@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BusMate · 하교 버스 탑승 전략</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);--bg:#f2f7fe;--surface:#fff;--ink:#1b2742;--mute:#667391;--line:#d9e5f7;--blue:#2f6fe0;--blueL:#eaf2ff;--green:#1a8f52;--greenL:#e8f7ef;--red:#d6453a;--redL:#fde8e6;--amber:#a86f00;--amberL:#fff3d6;--pur:#5a49c9;--purL:#eeebff}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b1220;--surface:#141f33;--ink:#e8eefb;--mute:#9aa8c2;--line:#26344f;--blue:#6ea2ff;--blueL:#182a4a;--green:#4cc48a;--greenL:#12301f;--red:#ff8a7a;--redL:#3a1b1a;--amber:#f0b84a;--amberL:#33280f;--pur:#a99bff;--purL:#231f45;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0b1220;--surface:#141f33;--ink:#e8eefb;--mute:#9aa8c2;--line:#26344f;--blue:#6ea2ff;--blueL:#182a4a;--green:#4cc48a;--greenL:#12301f;--red:#ff8a7a;--redL:#3a1b1a;--amber:#f0b84a;--amberL:#33280f;--pur:#a99bff;--purL:#231f45;color-scheme:dark}
+*{box-sizing:border-box}[hidden]{display:none!important}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/1.55 "IBM Plex Sans KR",system-ui,-apple-system,"Malgun Gothic",sans-serif}
+#app{max-width:430px;margin:0 auto;padding:12px 16px 110px;min-height:100vh}
+h2{font-size:16px;margin:0 0 10px}
+.top{display:flex;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:10px;color:var(--blue)}.brand svg{width:42px;height:42px}.brand b{font-size:30px;letter-spacing:-.5px}
+.icon{background:none;border:0;font-size:22px;color:var(--mute);min-width:44px;min-height:44px;cursor:pointer}
+.tagline{color:var(--mute);margin:0 0 10px 52px;font-size:14px}
+.hero{position:relative;background:linear-gradient(var(--blueL),var(--surface));border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:14px}
+.hero svg{display:block;width:100%}.hero p{position:absolute;right:12px;top:14px;margin:0;color:var(--blue);font-weight:700;font-size:14px;transform:rotate(-5deg)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:14px}
+label{display:block;font-weight:500;margin:12px 0 4px;font-size:14px}label:first-of-type{margin-top:0}
+label span{float:right;color:var(--blue);font-weight:700}
+input[type=text],input[type=file],select{width:100%;min-height:44px;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);font:inherit}
+input[type=range]{width:100%;accent-color:var(--blue)}
+button{font:inherit}.ghost{padding:9px 12px;border-radius:10px;border:1px solid var(--blue);background:transparent;color:var(--blue);cursor:pointer;min-height:44px}
+.cta{width:100%;min-height:54px;border:0;border-radius:14px;background:var(--blue);color:#fff;font-size:17px;font-weight:700;cursor:pointer}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.st{font-size:13px;color:var(--mute);margin:8px 0 0}.st.err{color:var(--red)}
+details{margin-top:10px}summary{cursor:pointer;color:var(--blue);min-height:32px}
+.bar{display:flex;align-items:center;gap:8px;margin-bottom:10px}.bar h1{flex:1;text-align:center;font-size:18px;margin:0}
+.sum{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--surface);margin-bottom:14px}
+.sh{display:flex;gap:10px;align-items:center;background:var(--blueL);padding:12px 14px}.sh svg{width:38px;height:38px;color:var(--blue)}.sh b{font-size:17px;display:block}.sh small{color:var(--mute)}
+.mx{display:grid;grid-template-columns:repeat(3,1fr);text-align:center;padding:14px 4px;font-size:13px}.mx>div{padding:0 6px;border-left:1px solid var(--line)}.mx>div:first-child{border:0}
+.mx .k{color:var(--ink);margin-bottom:6px;min-height:40px}
+.g{color:var(--green)}.b{color:var(--blue)}.a{color:var(--amber)}.r{color:var(--red)}
+.badge{display:inline-block;padding:2px 10px;border-radius:8px;font-weight:700;font-size:15px}.badge.g{background:var(--greenL)}.badge.b{background:var(--blueL)}.badge.a{background:var(--amberL)}.badge.r{background:var(--redL)}
+.bars{display:flex;gap:3px;justify-content:center;align-items:flex-end;height:26px;margin-top:6px}.bars i{width:8px;background:var(--line);border-radius:2px}.bars i.on{background:currentColor}
+.dots i{display:inline-block;width:11px;height:11px;border-radius:50%;background:var(--line);margin:4px 2px 0}.dots i.on{background:currentColor}
+.mx b{font-size:17px}.bigv{font-size:22px!important;line-height:2;color:var(--ink)}.mut{color:var(--mute);font-size:12px}
+.reco{background:var(--greenL);border:1px solid var(--green);border-radius:16px;padding:12px 14px;margin-bottom:14px}.reco.same{background:var(--blueL);border-color:var(--blue)}
+.reco b{display:block;color:var(--green);font-size:16px}.reco.same b{color:var(--blue)}.reco p{margin:4px 0 0;font-size:14px}
+.cmp{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:14px}
+.col{padding:12px;background:var(--surface)}.col+.col{border-left:1px solid var(--line)}.col.win{background:var(--greenL)}
+.col h3{font-size:13px;margin:0 0 6px;line-height:1.4}.col h3 small{display:block;color:var(--mute);font-weight:400}
+.chip{float:right;font-size:11px;color:#fff;background:var(--green);border-radius:4px;padding:0 6px}
+.r2,.col .r{padding:6px 0;border-bottom:1px dashed var(--line);font-size:12.5px;color:var(--mute)}.col .r:last-child{border:0}
+.col .r b{display:block;font-size:16px;color:var(--ink)}.d{font-size:12px}.d.up{color:var(--green)}.d.dn{color:var(--red)}
+.chartwrap{overflow-x:auto}svg text{fill:var(--mute);font-size:11px;font-family:inherit}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right}th:first-child,td:first-child{text-align:left}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12.5px;color:var(--mute);margin-top:6px}.legend i{display:inline-block;width:12px;height:12px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.aib{width:100%;text-align:left;background:var(--purL);border:1px solid var(--line);border-radius:16px;padding:12px 14px;display:flex;gap:10px;align-items:center;color:var(--ink);cursor:pointer}
+.aib span{flex:1}.aib small{display:block;color:var(--pur);font-weight:700}.aib em{font-style:normal;color:var(--pur);font-size:20px}
+.ai{white-space:pre-line;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:8px;font-size:14px}
+.note{font-size:12px;color:var(--mute);margin:10px 0 0}
+.tabbar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);border-top:1px solid var(--line);padding:6px 0 calc(6px + env(safe-area-inset-bottom,0px))}
+.tab{background:none;border:0;color:var(--mute);font-size:12px;min-height:48px;cursor:pointer}.tab span{display:block;font-size:20px;line-height:1.2}.tab[aria-current]{color:var(--blue);font-weight:700}
+.toast{position:fixed;left:50%;bottom:calc(80px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:10px 16px;border-radius:10px;font-size:14px;max-width:90%;text-align:center}
+</style>
+</head>
+<body>
+<div id="app">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="busi" viewBox="0 0 48 48"><rect x="7" y="5" width="34" height="34" rx="9" fill="currentColor"/><rect x="11" y="10" width="26" height="13" rx="3" fill="#fff"/><circle cx="16" cy="32" r="2.5" fill="#fff"/><circle cx="32" cy="32" r="2.5" fill="#fff"/><rect x="12" y="39" width="6" height="5" rx="2" fill="currentColor"/><rect x="30" y="39" width="6" height="5" rx="2" fill="currentColor"/></symbol></svg>
+
+<section id="home" aria-label="첫 화면">
+<div class="top"><div class="brand"><svg aria-hidden="true"><use href="#busi"/></svg><b>BusMate</b></div><button class="icon" id="gear" aria-label="자료 설정으로 이동">⚙</button></div>
+<p class="tagline">지금, 가장 똑똑한 버스 타는 방법</p>
+<div class="hero"><svg viewBox="0 0 400 150" aria-hidden="true"><rect y="122" width="400" height="28" fill="#9fb8d8" opacity=".35"/><rect x="24" y="40" width="30" height="30" rx="15" fill="#3b7be8"/><text x="39" y="60" text-anchor="middle" font-size="10" fill="#fff" style="fill:#fff">BUS</text><rect x="38" y="70" width="3" height="52" fill="#6b7a99"/><rect x="82" y="64" width="150" height="58" rx="12" fill="#3b7be8"/><rect x="92" y="72" width="26" height="22" rx="4" fill="#fff"/><rect x="124" y="72" width="26" height="22" rx="4" fill="#fff"/><rect x="156" y="72" width="26" height="22" rx="4" fill="#fff"/><rect x="188" y="72" width="34" height="34" rx="4" fill="#fff"/><circle cx="112" cy="124" r="11" fill="#2a3550"/><circle cx="200" cy="124" r="11" fill="#2a3550"/><rect x="270" y="62" width="70" height="60" fill="#c9d6ea"/><polygon points="262,62 305,36 348,62" fill="#aebfd9"/><rect x="296" y="88" width="18" height="34" fill="#8da2c4"/><circle cx="360" cy="100" r="18" fill="#5fb77a"/><rect x="358" y="112" width="4" height="12" fill="#7a5a3a"/></svg><p>더 이상 감으로 기다리지 마세요!</p></div>
+
+<section class="card" id="datacard" aria-label="자료">
+<h2>📂 자료 불러오기</h2>
+<label for="file">서울시 버스 승하차 엑셀(.xlsx) 또는 .csv</label>
+<input type="file" id="file" accept=".xlsx,.xls,.csv">
+<div style="margin-top:8px"><button class="ghost" id="sample" type="button">예시 데이터로 체험하기</button></div>
+<p class="st" id="status">파일은 내 브라우저 안에서만 읽고 어디에도 보내지 않아요.</p>
+<details id="mapbox" hidden><summary>열 이름이 맞지 않나요?</summary>
+<label for="cRoute">노선 열</label><select id="cRoute"></select>
+<label for="cStop">정류장명 열</label><select id="cStop"></select>
+<div id="longcols" hidden><label for="cHour">시간대 열</label><select id="cHour"></select>
+<label for="cBoard">승차 인원 열</label><select id="cBoard"></select>
+<label for="cAlight">하차 인원 열</label><select id="cAlight"></select></div></details>
+</section>
+
+<section class="card" aria-label="현재 정류장">
+<h2>📍 현재 정류장 (학교 앞)</h2>
+<label for="route">원하는 버스 노선</label><select id="route" disabled></select>
+<label for="q">정류장 검색</label><input type="text" id="q" placeholder="정류장명 일부 입력">
+<label for="school">학교 앞 정류장</label><select id="school" disabled></select>
+<p class="st">정류장 순서는 파일에 적힌 순서를 노선 진행 순서로 가정해요.</p>
+<label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="rev"> 순서가 반대예요(뒤집기)</label>
+</section>
+
+<section class="card" aria-label="이전 정류장 도보 이동 정보">
+<h2>🚶 이전 정류장 도보 이동 정보</h2>
+<label for="prev">이전 정류장</label><select id="prev" disabled></select>
+<label for="walk">도보 시간</label><select id="walk"></select>
+</section>
+
+<section class="card" aria-label="내 상황">
+<h2>🕒 내 상황</h2>
+<label for="hour">하교 시간대 <span id="hourV"></span></label><select id="hour"></select>
+<label for="head">배차 간격 <span id="headV"></span></label><input type="range" id="head" min="3" max="20" value="8">
+<label for="ride">탑승 시간 <span id="rideV"></span></label><input type="range" id="ride" min="10" max="60" value="25">
+</section>
+<button class="cta" id="go" type="button">🔍 조회하기</button>
+</section>
+
+<section id="result" aria-label="결과 화면" hidden>
+<div class="bar"><button class="icon" id="back" aria-label="뒤로">‹</button><h1>결과 보기</h1><span style="width:44px"></span></div>
+<div class="sum"><div class="sh"><svg aria-hidden="true"><use href="#busi"/></svg><div><b id="rStop"></b><small id="rSub"></small></div></div>
+<div class="mx" aria-live="polite"><div><div class="k">👥 추정 혼잡도</div><div id="mLoad"></div></div><div><div class="k">⚠ 만차/승차 거부 발생 빈도</div><div id="mDeny"></div></div><div><div class="k">🕒 예상 대기시간</div><div id="mWait"></div></div></div></div>
+<div class="reco" id="reco"><b id="recoT"></b><p id="recoS"></p></div>
+<div class="cmp" id="cols"></div>
+<div class="card"><h2>선택한 시간대 승하차 인원</h2><div id="tbl" class="chartwrap"></div></div>
+<div class="card"><h2>시간대별 혼잡도</h2><div class="chartwrap"><svg id="chart" viewBox="0 0 640 220" width="100%" role="img" aria-label="시간대별 버스 혼잡도 막대그래프"></svg></div>
+<div class="legend"><span><i style="background:var(--blue)"></i>학교 앞 정류장</span><span><i style="background:var(--green)"></i>이전 정류장</span><span>점선: 만차 기준</span></div></div>
+<button class="aib" id="aiBtn" type="button" aria-expanded="true">🤖<span><small>AI 추천</small><span id="aiHead"></span></span><em>⌄</em></button>
+<div class="ai" id="ai"></div>
+</section>
+
+<p class="note">출처: 공공데이터포털·서울 열린데이터광장 서울특별시 버스노선별 정류장별 시간대별 승하차 인원 정보 등 사용자가 올린 자료. 혼잡도는 승하차 인원을 노선 순서대로 누적해 추정한 값이라 실시간 정보나 실제 승차 거부 기록이 아니에요. 정원 70명·좌석 27석·서 있는 불편 가중치 0.3은 가정값입니다. 지도 기능은 지도 서비스를 정한 뒤 추가할 예정이에요.</p>
+</div>
+<nav class="tabbar" aria-label="하단 메뉴"><button class="tab" data-t="home" aria-current="page"><span>🏠</span>홈</button><button class="tab" data-t="hist"><span>📊</span>내역</button><button class="tab" data-t="alarm"><span>🔔</span>알림</button><button class="tab" data-t="me"><span>👤</span>마이페이지</button></nav>
+<div class="toast" id="toast" role="status" hidden></div>
+<script>
+const $=id=>document.getElementById(id),CAP=70,SEATS=27,STAND=0.3;
+let DB={},cur=null,rows=[],heads=[],wide=null;
+const num=v=>{const n=parseFloat(String(v).replace(/,/g,''));return isNaN(n)?0:n};
+const pct=x=>Math.round(x*100)+'%',lvl=x=>x<.45?'여유':x<.7?'보통':x<.9?'혼잡':'매우 혼잡';
+const hs=$('hour');for(let h=6;h<=23;h++)hs.add(new Option(h+':00~'+(h+1)+':00',h));hs.value=17;
+function status(t,err){$('status').textContent=t;$('status').className='st'+(err?' err':'')}
+function fill(sel,opts,val){sel.innerHTML='';opts.forEach(o=>sel.add(new Option(o.t??o,o.v??o)));if(val!==undefined)sel.value=val}
+const guess=(rx,list)=>{for(const r of rx){const m=list.find(h=>r.test(h));if(m)return m}return ''};
+
+// ---- 파일 읽기 ----
+$('file').addEventListener('change',e=>{
+ const f=e.target.files[0];if(!f)return;
+ if(!window.XLSX){status('엑셀 읽기 도구를 불러오지 못했어요. 인터넷 연결을 확인하고 새로고침해 주세요.',1);return}
+ status('파일을 읽는 중…');
+ const r=new FileReader();
+ r.onerror=()=>status('파일을 읽지 못했어요. 다른 파일로 다시 시도해 주세요.',1);
+ r.onload=()=>{try{
+  let wb;
+  if(/\.csv$/i.test(f.name)){
+   const u8=new Uint8Array(r.result);let txt;
+   try{txt=new TextDecoder('utf-8',{fatal:true}).decode(u8)}catch(_){txt=new TextDecoder('euc-kr').decode(u8)}
+   wb=XLSX.read(txt,{type:'string'});
+  }else wb=XLSX.read(r.result,{type:'array'});
+  rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
+  if(!rows.length){status('첫 번째 시트에 데이터가 없어요.',1);return}
+  heads=Object.keys(rows[0]);setupCols();
+ }catch(err){status('파일 형식을 읽을 수 없어요: '+err.message,1)}};
+ r.readAsArrayBuffer(f);
+});
+function setupCols(){
+ const bc={},ac={};
+ heads.forEach(h=>{let m=h.match(/(\d{1,2})\s*시.*승차/);if(m)bc[+m[1]]=h;m=h.match(/(\d{1,2})\s*시.*하차/);if(m)ac[+m[1]]=h});
+ wide=Object.keys(bc).length>=12?{bc,ac}:null;
+ const opt=['',...heads];
+ [['cRoute',[/노선번호/,/노선명/,/노선/]],['cStop',[/^(버스)?정류(장|소)명$/,/^역명$/,/정류(장|소)명/,/역명/]],['cHour',[/시간/,/hour/i]],['cBoard',[/승차/]],['cAlight',[/하차/]]].forEach(([id,rx])=>fill($(id),opt,guess(rx,heads)));
+ $('longcols').hidden=!!wide;$('mapbox').hidden=false;
+ if(!$('cRoute').value||!$('cStop').value||(!wide&&(!$('cHour').value||!$('cBoard').value))){$('mapbox').open=true;status('열을 자동으로 찾지 못했어요. 아래에서 직접 골라 주세요.',1);return}
+ build();
+}
+['cRoute','cStop','cHour','cBoard','cAlight'].forEach(id=>$(id).addEventListener('change',build));
+function build(){
+ const rc=$('cRoute').value,sc=$('cStop').value;if(!rc||!sc||!rows.length)return;
+ const hc=$('cHour').value,bcol=$('cBoard').value,acol=$('cAlight').value;
+ DB={};const idx={};
+ rows.forEach(r=>{
+  const rt=String(r[rc]).trim(),nm=String(r[sc]).trim();if(!rt||!nm)return;
+  const k=rt+'|'+nm;let s=idx[k];
+  if(!s){s=idx[k]={name:nm,b:Array(24).fill(0),a:Array(24).fill(0),n:Array(24).fill(0)};(DB[rt]=DB[rt]||[]).push(s)}
+  if(wide){for(let h=0;h<24;h++){if(wide.bc[h]){s.b[h]+=num(r[wide.bc[h]]);s.a[h]+=wide.ac[h]?num(r[wide.ac[h]]):0;s.n[h]++}}}
+  else{const h=parseInt(String(r[hc]).replace(/\D.*/,''),10);if(h>=0&&h<24){s.b[h]+=num(r[bcol]);s.a[h]+=acol?num(r[acol]):0;s.n[h]++}}
+ });
+ Object.values(DB).forEach(l=>l.forEach(s=>{for(let h=0;h<24;h++){const n=Math.max(1,s.n[h]);s.b[h]/=n;s.a[h]/=n}}));
+ const rts=Object.keys(DB);
+ if(!rts.length){status('노선·정류장 열을 확인해 주세요. 읽힌 데이터가 없어요.',1);return}
+ status(rows.length.toLocaleString()+'행, 노선 열 "'+rc+'", 정류장 열 "'+sc+'" 기준으로 노선 '+rts.length+'개를 찾았어요'+(wide?' (시간대별 열 형식).':' (행별 시간대 형식).'));
+ fill($('route'),rts);$('route').disabled=false;setRoute();
+}
+
+// ---- 예시 ----
+$('sample').addEventListener('click',()=>{
+ const g=(h,c,w,a)=>a*Math.exp(-((h-c)**2)/(2*w*w)),names=['예시 시작','예시 사거리','예시 시장','예시 도서관','예시 우체국','예시 학교 앞','예시 공원','예시 종점'];
+ DB={'예시 노선(시연용)':names.map((nm,i)=>{const s={name:nm,b:[],a:[]};for(let h=0;h<24;h++){const m=i===5?1:1-Math.abs(i-4)*.08;
+  s.b[h]=Math.max(0,(4+g(h,8,1.2,12)+g(h,17,1.6,(i===5?70:18))+g(h,12.5,1,(i===5?30:6)))*m);s.a[h]=Math.max(0,(3+g(h,9,1.4,10)+g(h,17,2,8)+(i===5?g(h,8.5,1,30):0))*m)}return s})};
+ $('route').innerHTML='';fill($('route'),Object.keys(DB));$('route').disabled=false;
+ status('예시 데이터를 불러왔어요. 실제 분석은 공공데이터 파일을 올려 주세요.');setRoute($('route').value,5);
+});
+
+// ---- 선택 ----
+function stops(){const l=DB[$('route').value]||[];return $('rev').checked?l.slice().reverse():l}
+function setRoute(_,si){
+ const l=stops();$('q').value='';listStops(si);
+}
+function listStops(si){
+ const l=stops(),q=$('q').value.trim(),sch=$('school'),pv=$('prev');
+ const keepS=si??+sch.value,keepP=+pv.value;
+ const f=l.map((s,i)=>({t:(i+1)+'. '+s.name,v:i,n:s.name})).filter(o=>!q||o.n.includes(q));
+ fill(sch,f);fill(pv,f);sch.disabled=pv.disabled=!f.length;
+ if(f.some(o=>o.v===keepS))sch.value=keepS;
+ const want=(+sch.value)-1;pv.value=f.some(o=>o.v===want)?want:(f.some(o=>o.v===keepP)?keepP:pv.value);
+ render();
+}
+$('route').addEventListener('change',()=>setRoute());
+$('q').addEventListener('input',()=>listStops());
+$('rev').addEventListener('change',()=>listStops());
+$('school').addEventListener('change',()=>{const w=+$('school').value-1;if([...$('prev').options].some(o=>+o.value===w))$('prev').value=w;render()});
+
+// ---- 계산 ----
+function calc(h,si,pi,head,walk,ride){
+ const l=stops(),b=60/head,cum=k=>{let t=0;for(let j=0;j<k;j++)t+=l[j].b[h]-l[j].a[h];return Math.max(0,t/b)};
+ const Lp=cum(pi),Ls=cum(si),S=l[si],P=l[pi];
+ const bpP=P.b[h]/b,bpS=S.b[h]/b,apS=S.a[h]/b;
+ const one=(L,wait,after)=>{const room=Math.max(0,CAP-after),deny=wait>0?Math.max(0,wait-room)/wait:0,seat=wait>0?Math.min(1,Math.max(0,SEATS-after)/wait):1;return{load:L/CAP,deny,seat}};
+ const A=one(Ls,bpS,Math.max(0,Ls-apS)),B=one(Lp,bpP,Lp);
+ const w=x=>head/2+Math.min(.9,x)/(1-Math.min(.9,x))*head;
+ A.t=w(A.deny);B.t=walk+w(B.deny);
+ A.cost=A.t+(1-A.seat)*ride*STAND;B.cost=B.t+(1-B.seat)*ride*STAND;
+ return{A,B,Ls,wS:bpS};
+}
+function upd(){$('hourV').textContent=hs.value+'시';$('headV').textContent=$('head').value+'분';$('rideV').textContent=$('ride').value+'분'}
+function render(){
+ upd();
+ if($('result').hidden)return;
+ const h=+hs.value,head=+$('head').value,walk=+$('walk').value,ride=+$('ride').value;
+ const l=stops(),si=+$('school').value,pi=+$('prev').value;
+ if(!l.length||isNaN(si)||isNaN(pi))return;
+ const r=calc(h,si,pi,head,walk,ride),S=l[si],P=l[pi],A=r.A,B=r.B;
+ const diff=A.cost-B.cost,wins=diff>.5,same=Math.abs(diff)<=.5;
+ const lv=x=>x<.45?0:x<.7?1:x<.9?2:3,cl=['g','b','a','r'],lvN=['여유','보통','혼잡','매우 혼잡'];
+ $('rStop').textContent='현재 '+S.name;$('rSub').textContent='('+$('route').value+' · '+h+'시대 기준)';
+ const L0=lv(A.load),nb=Math.min(5,Math.max(1,Math.ceil(A.load*5)));
+ $('mLoad').innerHTML=`<span class="badge ${cl[L0]}">${lvN[L0]}</span><div class="bars ${cl[L0]}">${[0,1,2,3,4].map(i=>`<i class="${i<nb?'on':''}" style="height:${8+i*4}px"></i>`).join('')}</div>`;
+ const dc=A.deny>=.3?'r':A.deny>=.1?'a':'g',dN=A.deny>=.3?'높음':A.deny>=.1?'보통':'낮음',nd=Math.min(5,Math.round(A.deny*10));
+ $('mDeny').innerHTML=`<b class="${dc}">${dN}</b><div class="mut">${pct(A.deny)}</div><div class="dots ${dc}">${[0,1,2,3,4].map(i=>`<i class="${i<nd?'on':''}"></i>`).join('')}</div>`;
+ $('mWait').innerHTML=`<b class="bigv">약 ${Math.round(A.t)}분</b>`;
+ const seatUp=Math.round((B.seat-A.seat)*100);
+ $('reco').className='reco'+(same?' same':'');
+ $('recoT').textContent=same?'어디서 타도 비슷해요':wins?'이전 정류장으로 이동하는 것이 더 유리해요!':'학교 앞에서 기다리는 것이 더 유리해요!';
+ $('recoS').textContent=same?'체감 시간 차이가 1분 안쪽이에요. 편한 쪽을 고르세요.':wins?`도보로 ${walk}분 이동하면 체감 시간이 약 ${Math.round(diff)}분 줄어들어요.`+(seatUp>0?` 착석 확률도 약 ${seatUp}%p 높아져요.`:''):`걸어가면 체감 시간이 약 ${Math.round(-diff)}분 더 걸려요.`;
+ const chg=(bv,av,u,low)=>{const d=bv-av;if(Math.abs(d)<(u==='분'?.5:.005))return '';const good=low?d<0:d>0;return `<span class="d ${good?'up':'dn'}">${d>0?'↑':'↓'} 약 ${u==='분'?Math.round(Math.abs(d))+'분 '+(d<0?'절감':'증가'):Math.round(Math.abs(d)*100)+'%p '+(d>0?'상승':'하락')}</span>`};
+ const col=(t,sub,o,win,isB)=>`<div class="col ${win?'win':''}"><h3>${win?'<span class="chip">추천</span>':''}${esc(t)}<small>${esc(sub)}</small></h3>
+ <div class="r">추정 혼잡도<b>${lvN[lv(o.load)]} (${pct(o.load)})</b></div>
+ <div class="r">예상 대기·이동<b>${o.t.toFixed(1)}분</b>${isB?chg(B.t,A.t,'분',1):''}</div>
+ <div class="r">탑승 확률<b>${pct(1-o.deny)}</b>${isB?chg(1-B.deny,1-A.deny,'%',0):''}</div>
+ <div class="r">착석 확률<b>${pct(o.seat)}</b>${isB?chg(B.seat,A.seat,'%',0):''}</div>
+ <div class="r">체감 시간<b>${o.cost.toFixed(1)}분</b>${isB?chg(B.cost,A.cost,'분',1):''}</div></div>`;
+ $('cols').innerHTML=col('지금 학교 앞에서 기다릴 경우',S.name,A,!wins&&!same,0)+col('이전 정류장으로 이동할 경우 (도보 '+walk+'분)',P.name,B,wins,1);
+ const f=x=>Math.round(x).toLocaleString();
+ $('tbl').innerHTML=`<table><tr><th>정류장</th><th>승차(명/시간)</th><th>하차(명/시간)</th></tr><tr><td>${esc(S.name)}</td><td>${f(S.b[h])}</td><td>${f(S.a[h])}</td></tr><tr><td>${esc(P.name)}</td><td>${f(P.b[h])}</td><td>${f(P.a[h])}</td></tr></table>`;
+ let s='',x0=30,W=640,H=Array.from({length:18},(_,i)=>i+6),bw=(W-x0-10)/H.length,y=v=>190-Math.min(v,1.1)*150;
+ s+=`<line x1="${x0}" x2="${W-10}" y1="${y(1)}" y2="${y(1)}" stroke="var(--red)" stroke-dasharray="4 4"/>`;
+ H.forEach((hh,i)=>{const c=calc(hh,si,pi,head,walk,ride),X=x0+i*bw;
+  if(hh===h)s+=`<rect x="${X}" y="8" width="${bw}" height="196" fill="var(--blue)" opacity=".1"/>`;
+  s+=`<rect x="${X+2}" y="${y(c.A.load)}" width="${bw/2-2}" height="${190-y(c.A.load)}" fill="var(--blue)"/><rect x="${X+bw/2}" y="${y(c.B.load)}" width="${bw/2-2}" height="${190-y(c.B.load)}" fill="var(--green)"/><text x="${X+bw/2}" y="206" text-anchor="middle">${hh}</text>`});
+ $('chart').innerHTML=s+`<text x="2" y="${y(1)+4}">100%</text>`;
+ const T=[`${h}시대 ${S.name}에는 대당 약 ${Math.round(r.Ls)}명이 탄 채로 도착하고, 새로 타려는 사람은 대당 약 ${Math.round(r.wS)}명으로 추정돼요.`];
+ T.push(A.deny>.15?`만차로 한 대를 보낼 가능성이 ${pct(A.deny)}라서 기다림이 평균 ${head}분씩 늘어날 수 있어요.`:'만차 가능성은 낮아서 학교 앞에서 기다려도 크게 손해 보진 않아요.');
+ T.push(`앉을 확률은 학교 앞 ${pct(A.seat)}, 이전 정류장 ${pct(B.seat)}예요.`);
+ T.push(wins?`도보 ${walk}분을 쓰더라도 만차와 서서 가는 부담을 줄이는 이득이 더 커요.`:same?'두 방법이 비슷하니 편한 쪽을 고르세요.':`도보 ${walk}분이 아깝게 돼요. 학교 앞에서 기다리는 편이 나아요.`);
+ T.push('실제 도착 정보가 아니라 평균 승하차 인원으로 추정한 결과예요.');
+ $('aiHead').textContent=same?'두 방법이 비슷해요. 편한 쪽을 고르세요.':wins?'지금은 이전 정류장으로 이동하는 것이 더 효율적이에요!':'지금은 학교 앞에서 기다리는 것이 더 효율적이에요!';
+ $('ai').textContent=T.join('\n');
+}
+function esc(t){return String(t).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}
+const ws=$('walk');for(let i=1;i<=15;i++)ws.add(new Option(i+'분',i));ws.value=6;
+const toast=m=>{const t=$('toast');t.textContent=m;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>t.hidden=true,2400)};
+function go(res){$('home').hidden=res;$('result').hidden=!res;window.scrollTo(0,0);if(res)render()}
+$('go').onclick=()=>{const l=stops(),si=+$('school').value,pi=+$('prev').value;
+ if(!l.length||$('school').disabled||isNaN(si)||isNaN(pi)){toast('먼저 자료를 불러오고 정류장을 골라 주세요');return}
+ if(pi>=si){toast('이전 정류장은 학교 앞보다 앞 순서여야 해요');return}
+ go(true)};
+$('back').onclick=()=>go(false);
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{b.dataset.t==='home'?go(false):toast('준비 중인 메뉴예요')});
+$('gear').onclick=()=>$('datacard').scrollIntoView({behavior:'smooth'});
+$('aiBtn').onclick=()=>{$('ai').hidden=!$('ai').hidden;$('aiBtn').setAttribute('aria-expanded',String(!$('ai').hidden))};
+['hour','head','walk','ride'].forEach(id=>$(id).addEventListener('input',render));
+upd();
+
+
+</script>
+</body>
+</html>
